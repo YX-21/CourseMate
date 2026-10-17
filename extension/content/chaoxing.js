@@ -775,7 +775,7 @@
     }
   });
 
-  // 课程名缓存（原 cx.js 的作用）：/mycourse/stu?courseid 页读取
+  // 课程名缓存：/mycourse/stu?courseid 页读取
   if (/\/mycourse\/stu/.test(location.href)) {
     const id = q(document, "#courseid");
     const name = q(document, ".nav_side .classDl dd");
