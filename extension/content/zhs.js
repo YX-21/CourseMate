@@ -138,7 +138,7 @@
   }
 
   async function startVideo() {
-    await sleep(5000); // 原插件同样等 5s 让播放器就绪
+    await sleep(5000); // 等 5s 让播放器就绪
     const video = q(".preview-section .video-player-wrapper video") || q("video");
     if (!video) {
       note("未找到视频元素，2 秒后重试");
@@ -157,7 +157,7 @@
       video.playbackRate = rate;
     } catch {}
 
-    // 播放被浏览器策略拒绝 → 静音后重试（原插件 et() 的做法）
+    // 播放被浏览器策略拒绝 → 静音后重试
     try {
       const p = video.play();
       if (p && p.catch) {
@@ -171,7 +171,7 @@
 
     if (!video.__cmZhsPauseHook) {
       video.__cmZhsPauseHook = true;
-      // 原插件逻辑：剩余时长 > 1s 视为异常暂停；否则视为播完 → 下一资源
+      // 剩余时长 > 1s 视为异常暂停；否则视为播完 → 下一资源
       video.addEventListener("pause", () => {
         if (!R.running) return;
         const left = parseInt(String(video.duration || 0)) - parseInt(String(video.currentTime || 0));
@@ -259,7 +259,7 @@
     }
     R.type = cur.type;
 
-    // 原插件：index !== 0 时才做类型白名单校验（首个资源直接执行）
+    // index !== 0 时才做类型白名单校验（首个资源直接执行）
     if (R.index !== 0 && !["video", "other", "book"].includes(R.type)) {
       note(`资源类型「${R.type}」暂不支持，已跳过`);
       R.index += 1;
@@ -273,7 +273,7 @@
     else if (R.type === "book") startPdf();
     else if (R.type === "other") startPpt();
     else {
-      // 首个资源若是 web 类型，原插件也直接进入 web 流程（跳过）
+      // 首个资源若是 web 类型，直接进入 web 流程（跳过）
       note(`类型「${R.type || "未知"}」无需本地处理，跳过`);
       R.index += 1;
       runNextResource();
@@ -282,7 +282,7 @@
 
   async function initLearnPage() {
     note("学习页初始化中…");
-    await sleep(6000); // 原插件同样等 6s
+    await sleep(6000); // 等 6s
 
     // 关闭「继续阅读」弹层
     const dialog = q(".read-note-dialog");
@@ -384,10 +384,18 @@
         questionFrom: "zhsWorkExcise",
         exciseUrl: location.href,
       });
-      if (!res || res.errNo !== 0) throw new Error(`errNo=${res ? res.errNo : "?"}`);
+      if (!res || res.errNo !== 0) throw new Error(solveErrMsg(res));
       data = res.data || {};
     } catch (e) {
-      CM.logAnswer({ summary: `第${num}题 解题失败：${e.message}` });
+      // 解题失败 → 不跳过，随便填一个，保证这题不空着
+      const fb = fallbackReviewAnswer(type, options.length);
+      const ok = applyReviewAnswer(box, type, { option: fb, answer: fb });
+      const summary = `第${num}题 解题失败（${e.message}），已随机填入 ${fb}`;
+      CM.logAnswer({ summary, answer: fb });
+      CM.report("answer", { summary, answer: fb });
+      note(`第 ${num} 题解题失败，已随机填入：${fb}`);
+      if (!ok) CM.logAnswer({ summary: `第${num}题 回填失败` });
+      await sleep(3000);
       return nextReviewQuestion();
     }
 
@@ -397,12 +405,47 @@
     CM.report("answer", { summary });
     if (!ok) CM.logAnswer({ summary: `第${num}题 回填失败` });
 
-    // 原插件：答题后 5s 再点下一题
+    // 答题后 5s 再点下一题
     await sleep(5000);
     nextReviewQuestion();
   }
 
-  /** 回填（原插件 K 函数）：字母匹配点选；填空按 # 拆分写入 input */
+  /** 回填：字母匹配点选；填空按 # 拆分写入 input */
+  /**
+   * 把接口错误拼成可诊断的文案：errNo / errstr / msg / httpStatus。
+   * 之前只记 errNo，真实原因被丢掉，失败了也查不出为什么。
+   */
+  function solveErrMsg(res) {
+    if (!res) return "解题失败：搜题服务无返回";
+    const parts = [`errNo=${res.errNo}`];
+    if (res.errstr) parts.push(`errstr=${res.errstr}`);
+    if (res.msg) parts.push(`msg=${res.msg}`);
+    if (res.message) parts.push(`message=${res.message}`);
+    if (res.httpStatus) parts.push(`http=${res.httpStatus}`);
+    return parts.join(" ");
+  }
+
+  /**
+   * 解题接口失败时的兜底：随便填一个，保证题不空着。
+   * 注意：这是随机填的，正确率等同于乱选。
+   * @param {string} type 题型文字（单选题 / 多选题 / 判断题 / 填空题 …）
+   * @param {number} optionCount 该题的选项个数
+   */
+  function fallbackReviewAnswer(type, optionCount) {
+    const n = Math.max(1, Number(optionCount) || 4);
+    const letters = Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i));
+
+    if (type === "判断题") return Math.random() < 0.5 ? "A" : "B";
+    if (type === "单选题") return letters[Math.floor(Math.random() * n)];
+    if (type === "多选题") {
+      const picked = [...letters].sort(() => Math.random() - 0.5);
+      const cnt = Math.min(n, 1 + Math.floor(Math.random() * 2));
+      return picked.slice(0, cnt).join("");
+    }
+    // 填空 / 简答 / 未知：无可选项，填占位文字
+    return "略";
+  }
+
   function applyReviewAnswer(box, type, data) {
     const option = String(data.option || "").trim();
     const answer = String(data.answer || data.option || "").trim();
@@ -447,7 +490,7 @@
     return false;
   }
 
-  /** 下一题（原插件 X 函数）；没有下一题则交卷 */
+  /** 下一题；没有下一题则交卷 */
   async function nextReviewQuestion() {
     await sleep(5000);
     if (!CM.running.running) return;
@@ -464,7 +507,7 @@
       note("自动提交已关闭，不执行交卷");
       return;
     }
-    // ReviewExam 页面原插件不点交卷
+    // ReviewExam 页面不点交卷
     if (location.href.includes("smartcourseexam.zhihuishu.com/ReviewExam")) {
       note("考试预览页不做交卷，请手动确认");
       return;
@@ -512,6 +555,7 @@
 
     note(`正在解答 ${num}（${typeText || "未知"}）`);
     let data;
+    let fallbackUsed = "";
     try {
       const res = await CM.solve({
         questionText: describe,
@@ -519,11 +563,15 @@
         questionType: typeText || "未知",
         exciseUrl: location.href,
       });
-      if (!res || res.errNo !== 0) throw new Error(`errNo=${res ? res.errNo : "?"}`);
+      if (!res || res.errNo !== 0) throw new Error(solveErrMsg(res));
       data = res.data || {};
     } catch (e) {
-      CM.logAnswer({ summary: `${num} 解题失败：${e.message}` });
-      return nextExamQuestion();
+      // 解题失败 → 不跳过，随便填一个，保证这题不空着
+      const n = qa(".nodeLab", subject).length || 4;
+      fallbackUsed = fallbackReviewAnswer(typeText, n);
+      data = { option: fallbackUsed, answer: fallbackUsed };
+      CM.logAnswer({ summary: `${num} 解题失败（${e.message}），已随机填入 ${fallbackUsed}` });
+      note(`${num} 解题失败，已随机填入：${fallbackUsed}`);
     }
 
     const option = String(data.option || "").toUpperCase();
@@ -531,11 +579,15 @@
     qa(".nodeLab", subject).forEach((lab, i) => {
       const letter = String.fromCharCode(65 + i);
       if (option.includes(letter)) {
-        setTimeout(() => clickEl(lab), 500 * i); // 原插件多选 500ms 错峰
+        setTimeout(() => clickEl(lab), 500 * i); // 多选 500ms 错峰
         any = true;
       }
     });
-    CM.logAnswer({ summary: `${num} ${typeText}：${data.option || data.answer || ""}` });
+    CM.logAnswer({
+      summary: `${num} ${typeText}：${data.option || data.answer || ""}${
+        fallbackUsed ? "（随机填入）" : ""
+      }`,
+    });
     CM.report("answer", { summary: `${num}：${data.option || ""}` });
     if (!any) CM.logAnswer({ summary: `${num} 回填失败` });
 
@@ -638,7 +690,7 @@
       note("刷课已启动");
       CM.logAnswer({ summary: "智慧树刷课已启动" });
       try {
-        sessionStorage.setItem("enableVideo", "true"); // 原插件的重入标记
+        sessionStorage.setItem("enableVideo", "true"); // 重入标记
       } catch {}
     } else {
       note("刷课已停止");

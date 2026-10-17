@@ -5,8 +5,7 @@
  * 一旦发现就把速率复位并上报。这里在页面脚本注册监听器之前，
  * 把这三类事件的 addEventListener 与 on* setter 全部屏蔽。
  *
- * 对应原始插件的 videoplayrate.js（逆向结论：仅此一处倍速反检测，
- * SideBar 中没有其他 playbackRate 干预）。
+ * 实测仅此一处需要倍速反检测，页面其他位置没有 playbackRate 干预。
  */
 
 (() => {

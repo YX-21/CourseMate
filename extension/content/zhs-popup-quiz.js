@@ -3,14 +3,14 @@
  * ---------------------------------------------------------------------------
  * 智慧树视频内弹题（#playTopic-dialog）自动作答。
  *
- * 逆向自原插件 zhs.8da68acf.js：弹题对话框的 Vue 实例里
+ * 弹题对话框的 Vue 实例里
  *   vm.topicInfo.lessonTestQuestionUseInterfaceDtos[0]
  *     .testQuestion.questionOptions[]  选项（含 sortUs 字母）
  *     .answerUs[]                      正确答案的字母集合
  * 即答案本来就在页面数据里，不需要调解题接口。
  * 通过 vm.topicClickQot(option) 逐项点选，再 vm.testDialog = false 关闭对话框。
  *
- * 原插件靠 SideBar 发 postMessage 触发；这里改成自动检测，更省事。
+ * 这里改为自动检测触发，无需外部 postMessage。
  */
 
 (() => {

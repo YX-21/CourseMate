@@ -1,14 +1,14 @@
 /**
  * CourseMate content/chaoxing.js   —— 超星 / 学校云 (chaoxing.com, xuexitong.com)
  * ---------------------------------------------------------------------------
- * 参考同类商业刷课扩展的引擎结构实现，只保留自动化主干，
- * 去掉登录、付费、埋点等无关逻辑。
+ * 参考同类商业刷课扩展的引擎结构实现，
+ * 只保留自动化主干，去掉登录、付费、埋点等无关逻辑。
  *
  * 页面结构（三层同源 iframe，可直接 contentDocument 访问）：
  *   studentstudy 页:  #iframe  →  /ananas/modules/<模块>/ 任务 iframe  →  <video>
  *   dowork 作业页:    #iframe  →  任务 iframe  →  #frame_content  →  .singleQuesId
  *
- * 开关语义（与原插件一致，作用于本插件自己的设置）：
+ * 开关语义（作用于本插件自己的设置）：
  *   autoJump     完成后自动跳到下一节
  *   autoFill     自动填充答案
  *   autoSubmit   自动提交（false 时只做「暂时保存」）
@@ -108,7 +108,8 @@
   function scanTasks() {
     const main = q(document, "#iframe");
     const mainDoc = frameDoc(main);
-    if (!mainDoc) return [];
+    // 主内容区还没加载出来：返回 null（区别于「确实没有任务」的 []）
+    if (!mainDoc) return null;
 
     const frames = qa(mainDoc, "iframe");
     const tasks = [];
@@ -118,7 +119,7 @@
       const m = src.match(/\/ananas\/modules\/([^/?#]+)/i);
       const kind = m ? m[1].toLowerCase() : "";
       if (!kind) return;
-      if (/topicAttachment|insertbbs/.test(kind)) return; // 原插件同样排除
+      if (/topicAttachment|insertbbs/.test(kind)) return; // 这两类不参与任务队列
 
       const helper = classify(kind);
       tasks.push({
@@ -133,9 +134,9 @@
     return tasks;
   }
 
-  /* --------------------------- 视频任务（videoDom） --------------------------- */
+  /* --------------------------- 视频任务 --------------------------- */
 
-  /** 暂停弹层清理：原插件 handleVideoPauseArtifactsInIframe */
+  /** 暂停弹层清理 */
   function clearPauseArtifacts(doc) {
     const picBtn = q(doc, ".sp_video_pic a.jb_btn") || q(doc, ".sp_video_pic .jb_btn_92");
     if (picBtn) {
@@ -219,9 +220,9 @@
     return "playing";
   }
 
-  /* ------------------------ 答题任务（workDom / cxDom） ------------------------ */
+  /* ------------------------ 答题任务 ------------------------ */
 
-  // input[id^="answertype"].value → 题型（逆向结论 B7）
+  // input[id^="answertype"].value → 题型
   const TYPE_MAP = {
     0: "单选题",
     1: "多选题",
@@ -285,7 +286,7 @@
     return null;
   };
 
-  /** 把答案写回 DOM（对应原插件 handleSingle/Multiple/Judgement/Completetion/ShortAnswer） */
+  /** 把答案写回 DOM */
   function applyAnswer(qi, type, data) {
     const option = String(data.option || "").trim();
     const answer = String(data.answer || data.option || "").trim();
@@ -332,7 +333,7 @@
     }
 
     if (type === 2 || type === 9 || type === 10) {
-      // 多空用 # 分隔（原插件同）
+      // 多空用 # 分隔（经验值）
       const parts = answer.split("#").map((s) => s.trim());
       const blanks = qa(qi, ".blankItemDiv");
       if (!blanks.length) return false;
@@ -380,6 +381,56 @@
     return false;
   }
 
+  /**
+   * 解题接口失败时的兜底：随便填一个，保证题不空着。
+   * 返回可直接交给 applyAnswer 的答案串。
+   * 注意：这是随机填的，正确率等同于乱选。
+   */
+  function fallbackAnswer(qi, type) {
+    const items =
+      type === 1 ? qa(qi, ".before-after-checkbox") : qa(qi, ".before-after");
+    const letters = items
+      .map((o) => ((o.innerText || "").trim().match(/([A-Za-z])/) || [])[1])
+      .filter(Boolean)
+      .map((c) => c.toUpperCase());
+
+    // 判断题：随机「对 / 错」（A=对，B=错）
+    if (type === 3) return Math.random() < 0.5 ? "A" : "B";
+
+    // 单选：随机一个选项
+    if (type === 0) {
+      if (letters.length) return letters[Math.floor(Math.random() * letters.length)];
+      return "A";
+    }
+
+    // 多选：随机挑 1~2 个
+    if (type === 1) {
+      if (letters.length) {
+        const pool = [...letters].sort(() => Math.random() - 0.5);
+        return pool.slice(0, Math.min(pool.length, 1 + Math.floor(Math.random() * 2))).join("");
+      }
+      return "A";
+    }
+
+    // 填空 / 主观题：无可选项，填占位文字
+    return "略";
+  }
+
+  /**
+   * 把接口错误拼成可诊断的文案。
+   * 之前只记 errNo=xxxx，真实原因（errstr/msg/httpStatus）全被丢掉，
+   * 导致下次再失败仍然查不出为什么。
+   */
+  function solveErrMsg(res) {
+    if (!res) return "解题失败：搜题服务无返回";
+    const parts = [`errNo=${res.errNo}`];
+    if (res.errstr) parts.push(`errstr=${res.errstr}`);
+    if (res.msg) parts.push(`msg=${res.msg}`);
+    if (res.message) parts.push(`message=${res.message}`);
+    if (res.httpStatus) parts.push(`http=${res.httpStatus}`);
+    return parts.join(" ");
+  }
+
   async function solveOne({ questionText, options, type, questionId, blankNum, index, total }) {
     const res = await CM.solve({
       questionText,
@@ -391,9 +442,7 @@
       courseName: CM.courseName || "",
       chapterName: CM.chapterName || "",
     });
-    if (!res || res.errNo !== 0) {
-      throw new Error(`解题失败 errNo=${res ? res.errNo : "?"}`);
-    }
+    if (!res || res.errNo !== 0) throw new Error(solveErrMsg(res));
     return res.data || {};
   }
 
@@ -432,8 +481,16 @@
       try {
         data = await solveOne({ questionText, options, type, questionId, blankNum, index: i, total: qs.length });
       } catch (e) {
-        failed++;
-        CM.logAnswer({ summary: `第${i + 1}题 解题失败：${e.message}`, questionText: questionText.slice(0, 40) });
+        // 解题失败 → 不跳过，随便填一个，保证这题不空着
+        const fb = fallbackAnswer(qi, type);
+        const ok = applyAnswer(qi, type, { option: fb, answer: fb });
+        const summary = `第${i + 1}题 解题失败（${e.message}），已随机填入 ${fb}`;
+        CM.logAnswer({ summary, answer: fb, questionText: questionText.slice(0, 40) });
+        CM.report("answer", { summary, answer: fb });
+        note(`第 ${i + 1} 题解题失败，已随机填入：${fb}`);
+        if (ok) solved++;
+        else failed++;
+        await sleep(1500);
         continue;
       }
 
@@ -453,7 +510,7 @@
         });
       }
 
-      // 原插件题间节流：客观题 5s，填空类 10s
+      // 题间节流（经验值）：客观题 5s，填空类 10s
       await sleep(isObjective(type) ? 3000 : 5000);
     }
 
@@ -520,8 +577,8 @@
     await sleep(2000);
     clickEl(next);
     await sleep(1500);
-    handleJobFinishTip();
-    note("已跳转到下一节");
+    const blocked = handleJobFinishTip();
+    note(blocked ? "任务点未完成，已返回继续学习" : "已跳转到下一节");
   }
 
   /** 通用推进：点「下一节」（#prevNextFocusNext），没有则返回上一页 */
@@ -531,7 +588,7 @@
       note("进入下一节");
       clickEl(next);
       await sleep(2500);
-      handleJobFinishTip();
+      if (handleJobFinishTip()) note("任务点未完成，已返回继续学习");
       return true;
     }
     note("本页没有「下一节」按钮，返回上一页");
@@ -540,13 +597,30 @@
     return false;
   }
 
-  /** 超星「任务未完成」拦截弹窗：.jobFinishTip → .popBottom .nextChapter */
+  /**
+   * 超星「当前章节还有任务点未完成，是否去完成？」拦截弹窗。
+   * 必须点「去学习」—— 任务没做完，点「下一节」会直接放行、漏掉任务点。
+   * 返回 true 表示这个弹窗被拦下处理了。
+   */
   function handleJobFinishTip() {
     const tip = q(document, ".jobFinishTip");
-    if (tip && isVisible(tip)) {
-      clickEl(q(document, ".popBottom .nextChapter"));
+    if (!tip || !isVisible(tip)) return false;
+
+    const candidates = qa("a, button, span, div, li", tip);
+    const learn = candidates.find((el) => {
+      if (!isVisible(el)) return false;
+      const t = (el.innerText || "").trim();
+      return t === "去学习" || t === "继续学习" || t === "去完成";
+    });
+
+    if (learn) {
+      note("本节任务点未完成 → 点击「去学习」，返回未完成任务");
+      clickEl(learn);
       return true;
     }
+
+    // 找不到「去学习」时绝不退化成点「下一节」，停在原地交给用户
+    note("检测到「任务点未完成」弹窗，但没找到「去学习」按钮 —— 已停住");
     return false;
   }
 
@@ -601,8 +675,12 @@
       // ---- 学习页：任务队列（视频 → 作业 → 视频 …）----
       if (/\/mycourse\/studentstudy/.test(href)) {
         const tasks = scanTasks();
+        if (!tasks) {
+          note("学习页主内容尚未加载，等待…");
+          return;
+        }
 
-        // 路由变化 → 重置队列与已处理记录（对应原插件 route 指纹）
+        // 路由变化 → 重置队列与已处理记录
         const fp = tasks.map((t) => t.key).join("|");
         if (fp !== fingerprint) {
           fingerprint = fp;
@@ -612,9 +690,11 @@
 
         const pending = tasks.filter((t) => t.helper !== "skip" && !processed.has(taskKey(t)));
         let current = null;
+        let reachable = 0;
         for (const t of pending) {
           const doc = frameDoc(t.el);
-          if (!doc) continue;
+          if (!doc) continue; // iframe 还没加载好
+          reachable++;
           if (t.helper === "video" && videoFinished(doc, q(doc, "video"))) continue;
           if (t.helper === "exam" && q(doc, ".testTit_status_complete")) continue;
           current = t;
@@ -622,6 +702,20 @@
         }
 
         if (!current) {
+          // 有待办任务但 iframe 一个都打不开 → 还在加载，别急着跳节
+          if (pending.length > 0 && reachable === 0) {
+            note(`有 ${pending.length} 个任务的 iframe 尚未加载，等待…`);
+            return;
+          }
+
+          // 本节还有插件不处理的任务类型 → 不自动跳节，否则会漏掉任务点
+          const skipped = tasks.filter((t) => t.helper === "skip");
+          if (skipped.length) {
+            const kinds = [...new Set(skipped.map((t) => t.kind))].join(" / ");
+            note(`本节还有 ${skipped.length} 个未支持的任务（${kinds}），不自动跳节`);
+            return;
+          }
+
           await autoJumpNext();
           return;
         }
