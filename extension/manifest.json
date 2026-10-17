@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "CourseMate 自动刷课助手",
+  "version": "0.1.0",
+  "description": "无需登录的刷课与填答自动化：支持超星学习通 / 学校云与智慧树。倍速播放、自动跳转、自动填充答案、自动提交。",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://*/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.chaoxing.com/*", "https://*.xuexitong.com/*"],
+      "js": ["content/common.js", "content/chaoxing.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "https://*.chaoxing.com/ananas/modules/video/*",
+        "https://*.xuexitong.com/ananas/modules/video/*"
+      ],
+      "js": ["content/cx-video-guard.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://*.zhihuishu.com/*"],
+      "js": ["content/common.js", "content/zhs.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://studyvideoh5.zhihuishu.com/stuStudy*"],
+      "js": ["content/zhs-popup-quiz.js"],
+      "run_at": "document_end",
+      "world": "MAIN"
+    }
+  ],
+  "action": {
+    "default_title": "CourseMate 自动刷课助手",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "coursemate-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CourseMate MCP server: 搜题接口 + 浏览器插件桥接（自动刷课 / 自动填答）",
+  "bin": { "coursemate-mcp": "./index.js" },
+  "scripts": { "start": "node index.js" }
+}

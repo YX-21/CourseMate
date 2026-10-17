@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  body {
+    width: 280px;
+    margin: 0;
+    padding: 14px;
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    color: #374151;
+  }
+  h1 { font-size: 15px; margin: 0 0 10px; color: #6d28d9; }
+  .row { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; }
+  .hint { color: #6b7280; font-size: 12px; line-height: 1.6; margin-top: 10px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-right: 6px; }
+  input[type=number] { width: 72px; padding: 3px 6px; border: 1px solid #e5e7eb; border-radius: 6px; }
+  button { padding: 5px 12px; border: 0; border-radius: 8px; background: #7c3aed; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>CourseMate 自动刷课助手</h1>
+
+  <div class="row">
+    <span><span class="dot" id="dot"></span><span id="bridgeText">MCP 未连接</span></span>
+    <button id="refresh">刷新</button>
+  </div>
+
+  <div class="row">
+    <span>MCP 桥接端口</span>
+    <input type="number" id="port" min="1" max="65535" step="1">
+  </div>
+
+  <div class="hint">
+    1. 在课程页面右下角的紫色圆球可打开控制面板。<br>
+    2. 插件无需登录即可使用；答案由公开搜题接口返回。<br>
+    3. MCP server 启动后自动监听该端口，插件每 0.4~20 秒轮询一次。
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
