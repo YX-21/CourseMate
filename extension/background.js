@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS = {
   playbackRate: 1.5, // 视频倍速
   autoJump: true, // 完成后自动跳到下一节
   autoFill: true, // 自动填充答案
-  autoSubmit: true, // 自动提交
+  autoSubmit: false, // 自动提交（默认关闭，避免误提交）
 };
 const DEFAULT_RUNNING = { running: false, startedAt: 0 };
 

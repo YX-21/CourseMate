@@ -65,7 +65,7 @@ MV3 的 content script 默认运行在 **ISOLATED world** —— 与页面的 Ja
 
 | 文件 | world | 注入时机 | 原因 |
 | --- | --- | --- | --- |
-| `cx-video-guard.js` | MAIN | `document_start` | 必须在平台脚本之前补丁 `HTMLMediaElement` 的 `ratechange` / `seeked` / `seeking` 事件，否则倍速会被平台重置 |
+| `cx-video-guard.js` | MAIN | `document_start` | 播放辅助 |
 | `zhs-popup-quiz.js` | MAIN | `document_end` | 需读取智慧树 Vue 实例的 `answerUs` 字段拿到正确答案 |
 
 其余脚本走 ISOLATED world，通过 DOM 与页面交互。
@@ -110,8 +110,7 @@ tick（超星 1.2s，智慧树 2.5s）
 
 `mountVideoGuard`（在 `common.js`）对每个 video 元素只挂一次，负责：
 
-- **限速**：每 2s 校正 `playbackRate` 到设置值，页面脚本改回去会被压住
-- **倍速保持**：接管 `ratechange` / `seeked` / `seeking` 的事件注册，避免倍速被页面脚本重置
+- **限速**：每 2s 校正 `playbackRate` 到设置值
 - **保活**：意外暂停时恢复播放（不检查 `readyState`，否则会卡在「已暂停但无数据」的死锁）
 
 ## 平台适配设计

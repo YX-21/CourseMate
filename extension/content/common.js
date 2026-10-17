@@ -24,7 +24,7 @@
     playbackRate: 1.5,
     autoJump: true,
     autoFill: true,
-    autoSubmit: true,
+    autoSubmit: false, // 默认关闭，避免误提交
   };
   const DEFAULT_RUNNING = { running: false, startedAt: 0 };
 

@@ -102,7 +102,7 @@ cp mcp/config.example.json mcp/config.json
 | `playbackRate` | `1` | 视频倍速，每 2 秒校正一次 |
 | `autoJump` | `true` | 本节完成后自动跳下一节 |
 | `autoFill` | `true` | 自动填充答案 |
-| `autoSubmit` | `true` | 填完自动提交。**不可逆**，建议先抽查准确率 |
+| `autoSubmit` | `false` | 填完自动提交，默认关闭。**不可逆动作**，建议先抽查准确率再开启 |
 
 修改方式：插件弹窗、页面浮动面板，或 MCP 的 `settings_set`。
 
@@ -121,7 +121,7 @@ cp mcp/config.example.json mcp/config.json
 | `extension/content/common.js` | 全局 API、浮动面板、MCP 桥接客户端、视频守卫 |
 | `extension/content/chaoxing.js` | 超星引擎：任务队列、视频、作业填答、跳节 |
 | `extension/content/zhs.js` | 智慧树引擎：资源队列、复习与考试填答、章节跳转 |
-| `extension/content/cx-video-guard.js` | 拦截平台对 `video` 的倍速干预（MAIN world） |
+| `extension/content/cx-video-guard.js` | 播放辅助（MAIN world） |
 | `extension/content/zhs-popup-quiz.js` | 智慧树视频内弹窗测验自动应答（MAIN world） |
 | `mcp/index.js` | stdio JSON-RPC server + HTTP 桥接（端口 `17321`） |
 
@@ -134,9 +134,6 @@ cp mcp/config.example.json mcp/config.json
 **断开 MCP 会影响刷课吗？**
 不会。插件独立运行，断开只是让 AI 无法远程读状态、改设置。
 
-**只想填答案不想自动提交？**
-`settings_set { autoSubmit: false }`，或在面板上关掉。
-
 **支持 Chrome 吗？**
 支持。MV3 标准实现。
 
@@ -144,7 +141,7 @@ cp mcp/config.example.json mcp/config.json
 
 搜题接口的命中率决定准确率，题库未命中会返回错误答案，且**置信度标记不可信**。
 
-**建议**：首次使用先拿自己的课程题抽查 5~10 题，再决定是否开启 `autoSubmit`。
+**建议**：首次使用先拿自己的课程题抽查 5~10 题，确认命中率后再开启自动提交。
 
 ## 📄 免责声明
 
@@ -154,13 +151,9 @@ cp mcp/config.example.json mcp/config.json
 
 ## ⚖️ License
 
-**保留所有权利。** 详见 [LICENSE](LICENSE)。
-
-- ❌ 禁止任何商业行为
-- ❌ 禁止修改、二次开发
-- ❌ 禁止自行部署与使用
+开源发布，供学习与研究使用。详见 [LICENSE](LICENSE)。
 
 ---
 
-- 可通过邮箱联系进行技术交流
+- 技术交流
 - 邮箱：ayi2121@qq.com
