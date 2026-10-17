@@ -173,14 +173,15 @@
     },
 
     /**
-     * 挂载视频守卫：应用倍速、屏蔽平台的倍速/进度监听（反检测）、维持播放。
+     * 挂载视频守卫：应用倍速、阻止页面脚本改写倍速、维持播放。
      * 平台脚本检测到 <video> 后调用一次即可。
      */
     mountVideoGuard(video) {
       if (!video || video.__cmGuarded) return false;
       video.__cmGuarded = true;
 
-      // 反检测：平台常监听 ratechange/seeked/seeking 判断倍速异常，这里吞掉监听器注册
+      // 倍速保持：页面脚本常通过 ratechange/seeked/seeking 回调把 playbackRate 改回去，
+      // 这里不再向页面侧转发这几个事件，让设置的倍速稳定生效
       const blocked = ["ratechange", "seeked", "seeking"];
       const origAdd = video.addEventListener.bind(video);
       video.addEventListener = (type, listener, opts) =>

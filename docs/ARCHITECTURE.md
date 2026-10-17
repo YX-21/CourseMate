@@ -1,6 +1,6 @@
 # 架构说明
 
-本文档描述 CourseMate 的内部结构与协议，供二次开发参考。普通使用只需看 [README](../README.md)。
+本文档描述 CourseMate 的内部结构与协议。普通使用只需看 [README](../README.md)。
 
 ## 分层
 
@@ -110,16 +110,16 @@ tick（超星 1.2s，智慧树 2.5s）
 
 `mountVideoGuard`（在 `common.js`）对每个 video 元素只挂一次，负责：
 
-- **限速**：每 2s 校正 `playbackRate` 到设置值，平台改回去会被压住
-- **反检测**：触发 `timeupdate` / `pause` 等事件，规避平台的切屏 / 挂机检测
+- **限速**：每 2s 校正 `playbackRate` 到设置值，页面脚本改回去会被压住
+- **倍速保持**：接管 `ratechange` / `seeked` / `seeking` 的事件注册，避免倍速被页面脚本重置
 - **保活**：意外暂停时恢复播放（不检查 `readyState`，否则会卡在「已暂停但无数据」的死锁）
 
-## 扩展新平台
+## 平台适配设计
 
-1. 在 `extension/content/` 新增 `xxx.js`，仿照 `chaoxing.js` 结构实现
-2. 在 `manifest.json` 的 `content_scripts` 增加一段，`matches` 填目标域名，`js` 包含 `content/common.js` 和你的引擎
-3. 需要 MAIN world 的部分单独拆文件，加 `"world": "MAIN"`
-4. 用 `CM.setStatus` / `CM.logAnswer` / `CM.report` 上报状态，MCP 侧无需改动
+新平台遵循同一套结构：每个平台一个引擎文件，由 `manifest.json` 的 `content_scripts`
+按域名挂载 `content/common.js` + 对应引擎；需要 MAIN world 的部分单独成文件并加
+`"world": "MAIN"`。引擎通过 `CM.setStatus` / `CM.logAnswer` / `CM.report` 上报状态，
+MCP 侧无需改动。
 
 `common.js` 暴露的全局 API：
 

@@ -1,8 +1,7 @@
 /**
  * CourseMate content/chaoxing.js   —— 超星 / 学校云 (chaoxing.com, xuexitong.com)
  * ---------------------------------------------------------------------------
- * 参考同类商业刷课扩展的引擎结构实现，
- * 只保留自动化主干，去掉登录、付费、埋点等无关逻辑。
+ * 超星平台的自动化引擎：任务队列扫描、视频处理、作业填答与跳节。
  *
  * 页面结构（三层同源 iframe，可直接 contentDocument 访问）：
  *   studentstudy 页:  #iframe  →  /ananas/modules/<模块>/ 任务 iframe  →  <video>
@@ -94,7 +93,7 @@
     CM.setStatus({ platform: "chaoxing", phase, ...(extra || {}) });
   };
 
-  /* ------------------------- 任务分类（逆向 catalog） ------------------------- */
+  /* ---------------------------- 任务类型分类 ---------------------------- */
 
   // /ananas/modules/<module>/ → 处理方式
   // video/audio/pdf → 视频类；work/pack → 答题类；bbs* → 讨论；其余 → 跳过

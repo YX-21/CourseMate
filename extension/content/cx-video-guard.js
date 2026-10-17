@@ -1,11 +1,10 @@
 /**
  * CourseMate content/cx-video-guard.js   (MAIN world, document_start)
  * ---------------------------------------------------------------------------
- * 超星播放器会监听 ratechange / seeked / seeking 来检测倍速被篡改，
- * 一旦发现就把速率复位并上报。这里在页面脚本注册监听器之前，
- * 把这三类事件的 addEventListener 与 on* setter 全部屏蔽。
+ * 在页面脚本注册监听器之前接管 HTMLMediaElement 的
+ * ratechange / seeked / seeking 事件注册，避免播放倍速被页面脚本改写。
  *
- * 实测仅此一处需要倍速反检测，页面其他位置没有 playbackRate 干预。
+ * 仅此一处需要处理，页面其他位置没有 playbackRate 相关逻辑。
  */
 
 (() => {
@@ -31,5 +30,5 @@
     } catch {}
   }
 
-  console.info("[CourseMate] 超星播放器倍速反检测已生效");
+  console.info("[CourseMate] 超星播放器倍速保持已生效");
 })();
