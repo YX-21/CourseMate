@@ -269,5 +269,8 @@ node mcp/index.js
 - 本项目与任何商业刷课 / 搜题产品及课程平台**无关联**
 
 ## ⚖️ License
+可通过邮箱联系我获取完整版，无需配置，开箱即用
+邮箱：ayi2121@qq.com
+
 
 [MIT](LICENSE)
