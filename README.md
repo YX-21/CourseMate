@@ -162,5 +162,5 @@ cp mcp/config.example.json mcp/config.json
 
 ---
 
-- 可通过邮箱联系获取使用授权
+- 可通过邮箱联系进行技术交流
 - 邮箱：ayi2121@qq.com
