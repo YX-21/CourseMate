@@ -158,4 +158,5 @@ cp mcp/config.example.json mcp/config.json
 
 ---
 
-可通过邮箱联系我获取完整版，无需配置，开箱即用 邮箱：ayi2121@qq.com
+- 可通过邮箱联系
+- 邮箱：ayi2121@qq.com
