@@ -2,7 +2,7 @@
 
 > 免登录的网课自动化框架，AI 智能体可实时指挥 —— 平台改版时，它能自己修自己。
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-chaoxing%20%7C%20zhihuishu-green.svg)]
 [![Node](https://img.shields.io/badge/node-%E3%89%A518.0-brightgreen.svg)]
 
@@ -154,9 +154,13 @@ cp mcp/config.example.json mcp/config.json
 
 ## ⚖️ License
 
-[MIT](LICENSE)
+**保留所有权利。** 详见 [LICENSE](LICENSE)。
+
+- ❌ 禁止任何商业行为
+- ❌ 禁止修改、二次开发
+- ❌ 禁止自行部署与使用
 
 ---
 
-- 可通过邮箱联系
+- 可通过邮箱联系获取使用授权
 - 邮箱：ayi2121@qq.com
